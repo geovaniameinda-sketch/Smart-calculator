@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Logika Super</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #6c5ce7; --secondary: #00cec9; --bg: #f8f9fa; --text: #2d3436; }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); display: flex; justify-content: center; padding: 20px; color: var(--text); }
+        .container { width: 100%; max-width: 480px; background: white; padding: 30px; border-radius: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: var(--primary); margin-bottom: 25px; font-weight: 700; }
+        .input-group { margin-bottom: 15px; }
+        label { font-size: 11px; font-weight: 700; color: #b2bec3; text-transform: uppercase; margin-bottom: 5px; display: block; }
+        input, select { width: 100%; padding: 14px; border: 2px solid #dfe6e9; border-radius: 12px; font-size: 15px; box-sizing: border-box; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--primary); }
+        .unit-box { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; margin-top: 10px; }
+        button { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 20px; transition: 0.3s; }
+        button:hover { background: #5649c0; transform: translateY(-2px); }
+        .result-box { margin-top: 25px; padding: 20px; background: #f0f3ff; border-radius: 15px; border-left: 6px solid var(--primary); display: none; }
+        .logic-box { margin-top: 15px; padding: 20px; background: #fff9db; border-radius: 15px; border-left: 6px solid #fcc419; display: none; font-family: 'Roboto Mono', monospace; font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🔢 Logic Calc Super</h2>
+    
+    <div class="input-group">
+        <label id="label-n1">Angka Utama</label>
+        <input type="number" id="num1" placeholder="Masukkan angka...">
+    </div>
+    
+    <div class="input-group">
+        <label>Pilih Operasi</label>
+        <select id="operator">
+            <optgroup label="Dasar & Pecahan">
+                <option value="add">Tambah (+)</option>
+                <option value="sub">Kurang (-)</option>
+                <option value="mul">Kali (×)</option>
+                <option value="div">Bagi (÷)</option>
+                <option value="frac">Sederhanakan Pecahan (A/B)</option>
+            </optgroup>
+            <optgroup label="Lanjutan & Sains">
+                <option value="pow">Pangkat (xʸ)</option>
+                <option value="root">Akar Kuadrat (√x)</option>
+                <option value="fact">Faktorial (!)</option>
+                <option value="sin">Sinus (sin)</option>
+                <option value="cos">Cosinus (cos)</option>
+                <option value="tan">Tangen (tan)</option>
+            </optgroup>
+            <optgroup label="Konversi Satuan">
+                <option value="conv_len">Panjang (km - mm)</option>
+                <option value="conv_mass">Massa (kg - mg)</option>
+                <option value="conv_area">Luas (km² - mm²)</option>
+            </optgroup>
+        </select>
+    </div>
+
+    <div id="second-input-group" class="input-group">
+        <label id="label-n2">Angka Kedua</label>
+        <input type="number" id="num2" placeholder="Angka kedua...">
+    </div>
+
+    <div id="unit-group" class="input-group" style="display:none;">
+        <label>Pilih Satuan</label>
+        <div class="unit-box">
+            <select id="from_unit"></select>
+            <span style="font-size:12px; font-weight:bold;">KE</span>
+            <select id="to_unit"></select>
+        </div>
+    </div>
+
+    <button onclick="hitung()">Hitung & Lihat Cara</button>
+
+    <div id="result-display" class="result-box">
+        <label>Hasil</label>
+        <div id="hasil" style="font-size: 22px; font-weight: bold; color: var(--primary);"></div>
+    </div>
+
+    <div id="logic-display" class="logic-box">
+        <label style="color: #f08c00;">Langkah Pengerjaan:</label>
+        <div id="langkah"></div>
+    </div>
+</div>
+
+<script>
+    const opSelect = document.getElementById('operator');
+    const secondGroup = document.getElementById('second-input-group');
+    const unitGroup = document.getElementById('unit-group');
+    
+    const units = {
+        len: ['km', 'hm', 'dam', 'm', 'dm', 'cm', 'mm'],
+        mass: ['kg', 'hg', 'dag', 'g', 'dg', 'cg', 'mg'],
+        area: ['km2', 'hm2', 'dam2', 'm2', 'dm2', 'cm2', 'mm2']
+    };
+
+    opSelect.addEventListener('change', function() {
+        const op = this.value;
+        const isConv = op.startsWith('conv_');
+        const isSingle = ['fact', 'root', 'sin', 'cos', 'tan'].includes(op);
+
+        unitGroup.style.display = isConv ? 'block' : 'none';
+        secondGroup.style.display = (isConv || isSingle) ? 'none' : 'block';
+        
+        document.getElementById('label-n1').innerText = (['sin','cos','tan'].includes(op)) ? "Sudut (Derajat °)" : "Angka Utama";
+
+        if(isConv) {
+            const type = op.split('_')[1];
+            fillUnits(units[type]);
+        }
+    });
+
+    function fillUnits(unitList) {
+        const from = document.getElementById('from_unit');
+        const to = document.getElementById('to_unit');
+        from.innerHTML = to.innerHTML = "";
+        unitList.forEach(u => {
+            from.innerHTML += `<option value="${u}">${u}</option>`;
+            to.innerHTML += `<option value="${u}">${u}</option>`;
+        });
+    }
+
+    function hitung() {
+        const n1 = parseFloat(document.getElementById('num1').value);
+        const n2 = parseFloat(document.getElementById('num2').value);
+        const op = opSelect.value;
+        let hasil, langkah = "";
+
+        if (isNaN(n1)) return alert("Isi angka pertamanya dulu!");
+
+        if (op.startsWith('conv_')) {
+            const type = op.split('_')[1];
+            const u = units[type];
+            const fIdx = u.indexOf(document.getElementById('from_unit').value);
+            const tIdx = u.indexOf(document.getElementById('to_unit').value);
+            const diff = tIdx - fIdx;
+            const mult = (type === 'area') ? 100 : 10;
+            const power = Math.pow(mult, Math.abs(diff));
+            
+            hasil = diff >= 0 ? n1 * Math.pow(mult, diff) : n1 / Math.pow(mult, Math.abs(diff));
+            
+            langkah = `Satuan ${type === 'len' ? 'Panjang' : type === 'mass' ? 'Massa' : 'Luas'}\n`;
+            langkah += `Dari ${u[fIdx]} ke ${u[tIdx]} itu ${diff >= 0 ? 'Turun' : 'Naik'} ${Math.abs(diff)} tangga.\n`;
+            langkah += `Setiap tangga ${diff >= 0 ? 'dikali' : 'dibagi'} ${mult}.\n`;
+            langkah += `Hitung: ${n1} ${diff >= 0 ? '×' : '÷'} ${power} = ${hasil}`;
+        } else {
+            switch(op) {
+                case 'add': hasil = n1 + n2; langkah = `${n1} + ${n2} = ${hasil}`; break;
+                case 'sub': hasil = n1 - n2; langkah = `${n1} - ${n2} = ${hasil}`; break;
+                case 'mul': hasil = n1 * n2; langkah = `${n1} × ${n2} = ${hasil}`; break;
+                case 'div': hasil = n1 / n2; langkah = `${n1} ÷ ${n2} = ${hasil}`; break;
+                case 'pow': hasil = Math.pow(n1, n2); langkah = `${n1} pangkat ${n2} = ${hasil}`; break;
+                case 'root': hasil = Math.sqrt(n1); langkah = `√${n1} = ${hasil}\nKarena ${hasil} × ${hasil} = ${n1}`; break;
+                case 'fact':
+                    hasil = 1; let d=[]; for(let i=n1;i>=1;i--){hasil*=i; d.push(i);}
+                    langkah = `${n1}! = ${d.join(' × ')} = ${hasil}`; break;
+                case 'sin': case 'cos': case 'tan':
+                    let rad = n1 * (Math.PI / 180);
+                    hasil = (op==='sin'? Math.sin(rad) : op==='cos'? Math.cos(rad) : Math.tan(rad)).toFixed(4);
+                    langkah = `Sudut ${n1}° diubah ke Radian.\nHasil ${op.toUpperCase()}: ${hasil}`; break;
+                case 'frac':
+                    const fpb = (a, b) => b === 0 ? a : fpb(b, a % b);
+                    let p = fpb(Math.abs(n1), Math.abs(n2));
+                    hasil = `${n1/p}/${n2/p}`;
+                    langkah = `FPB dari ${n1} dan ${n2} adalah ${p}.\n${n1}÷${p} / ${n2}÷${p} = ${hasil}`; break;
+            }
+        }
+
+        document.getElementById('result-display').style.display = 'block';
+        document.getElementById('logic-display').style.display = 'block';
+        document.getElementById('hasil').innerText = hasil;
+        document.getElementById('langkah').innerText = langkah;
+    }
+</script>
+</body>
+</html>
